@@ -6,6 +6,15 @@ export async function loadLumiRealUI(): Promise<void> {
   const root = document.getElementById('root');
   if (!root) return;
 
+  // Remove the "lumi badge" injected by the original static template (if present).
+  // It can appear either immediately or after the bundle finishes mounting.
+  const removeBadge = () => {
+    const badge = document.getElementById('lumi-badge');
+    if (badge) badge.remove();
+  };
+  removeBadge();
+
+
   // Avoid double-mount
   if (root.getAttribute('data-lumi-mounted') === '1') return;
 
