@@ -1,4 +1,10 @@
 {
-  "outputDirectory": "dist"
+  "framework": "none",
+  "cleanUrls": true,
+  "publicFiles": ["*"],
+  "rewrites": [],
+  "routes": [
+    {"src": "/(.*)", "dest": "/index.html"}
+  ]
 }
 
