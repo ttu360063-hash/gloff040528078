@@ -1,0 +1,134 @@
+/*
+ *  Document   : pedidos.js
+ *  Author     : ComunicPlus
+ */
+ $(document).ready(function() {
+
+    $("#tLocutores").each(function() {
+        colum_target = $(this).attr('target') ? $(this).attr('target') : 0;
+        orderable = $(this).attr('orderable') ? $(this).attr('orderable') : true;
+        ajax = $(this).attr('table-data') ? true : false;
+        hide = $(this).attr('hide') ? $(this).attr('hide').split(',') : false;
+        $(this).DataTable({
+            serverSide: true,
+            autoWidth: false,
+            lengthChange: false,
+            ajax: {
+                url: $(this).attr('table-data'),
+                type: 'POST',
+            },
+            createdRow: function (row, data, index) {
+                $(row).addClass("intro-y");
+            },
+            dom: "<'hidden'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>><'row'<'col-sm-12'tr>><'hidden col-span-12 grid grid-cols-12 gap-6'<'col-span-12 lg:col-span-8 intro-y'p><'hidden lg:block col-span-12 lg:col-span-4 text-right intro-y'i>>",
+            columns: [
+                { width: "",
+                    // Nome
+                    render: function (full, type, data) {
+                        return '<div filtro-voz="'+data.filtro+'" filtro-speed="'+data.speed+'" filtro-horario="'+data.horario+'" class="intro-x flex flex-row items-center media-body text-uppercase" style="line-height:1em"><div class="w-12 h-12 lg:w-12 lg:h-12 image-fit lg:mr-1"><img alt="'+data.nome+'" class="rounded-full" src="//hd.paineldegravacao.com.br/perfil/'+data.imagem+'"></div><button class="button rounded-full mr-1 px-2 ml-2 p-1 text-light bg-'+data.cor+' text-white">'+data.status_titulo+' <small>'+data.status_texto+'</small></button><div class="lg:ml-2 lg:mr-auto text-center lg:text-left mt-3 lg:mt-0"><a class="font-medium">'+data.nome+'</a> <div class="text-gray-600 text-xs">'+data.novo+'</div></div></div>';
+                    }
+                },
+                { width: "50px",
+                    //data: "demo",
+                    render: function (full, type, data) {
+                        return '<button '+(data.novo_demo == 1 ? 'title="novo"' : '')+' dark:bg-dark-5 dark:text-gray-300 class="button w-12 rounded-full mr-1 bg-theme-'+(data.novo_demo == 1 ? '17' : '14')+' text-theme-'+(data.novo_demo == 1 ? '11' : '10')+'"  data-demos=\''+data.demos+'\' onClick="playDemo(this)" playDemo="//hd.paineldegravacao.com.br/demos/'+data.demo+'" estilos="'+data.estilos+'" nome="'+data.nome+'"><i class="fa fa-play"></i></button>';
+                    }
+                },
+                { width: "50px",
+                    //data: "speed",
+                    render: function (full, type, data) {
+                        return '<button class="pointer js-simple-tooltip" simpleTooltip data-simpletooltip-text="'+data.speed_texto+'"><img src="https://paineldegravacao.com.br/publico/images/agilidade/'+data.speed+'.png" style="max-height=35px; box-shadow: none;"></button>';
+                    }
+                },
+                { width: "160px",
+                    data: "ID",
+                    render: function (data) {
+                        return '<div  ver-horario="'+data+'" class="pointer px-3 py-2 bg-theme-14 dark:bg-dark-5 dark:text-gray-300 text-theme-10 font-medium text-center rounded-full"><i class="fa fa-clock-o"></i> Horários</div>';
+                    }
+                },
+                { width: "150px",
+                    //data: "avaliacao",
+                    render: function (full, type, data) {
+                        return '<div class="js-rating-view" data-star-half="icon-star text-muted"  data-star-on="fa fa-star text-theme-12" data-star-off="fa fa-star text-gray-600"  data-score="'+data.avaliacao+'"></div>';
+                    }
+                }
+            ],
+            //pagingType: "full_numbers",
+            columnDefs: [
+                { orderable: false, targets: [0,1,2,3] },
+                { searchable: false, targets: [0,1,2,3] }
+            ],
+            pageLength: -1,
+            language: {
+                "url": PATH+"publico/plugins/jquery-datatable/pt-br.js"
+            }
+        });
+        if (hide) {
+            tabela = $('#tLocutores').dataTable().api();
+            tabela.columns(hide).visible(false);
+        }
+        $(this).on('processing.dt', function (e, settings, processing) {
+            if (processing) {
+                loader(this);
+            } else {
+                unload(this);
+            }
+            initTooltip();
+        })
+    });
+
+
+    $('#fPesquisa').on('submit', function (e) {
+        e.preventDefault();
+        $('#tLocutores').DataTable().search(
+            $('#pesquisa').val()
+        ).draw();
+        atualizarFiltros();
+    });
+    $('#fPesquisa').delayKeyup(function(e){
+        $('#tLocutores').DataTable().search(
+            $('#pesquisa').val()
+        ).draw();
+        atualizarFiltros();
+    }, 300);
+    $('#fPesquisa').on('reset', function (e) {
+        $('#tLocutores').DataTable().search(
+            ''
+        ).draw();
+    });
+    $('#tLocutores').DataTable().on('draw', function() {
+        BaseCompRating.init();
+        atualizarFiltros();
+    });
+    $('.btn-filter').on('click', function () {
+        $('.btn-speed').removeClass('active');
+        $('.btn-filter').removeClass('active');
+        $('.btn-filter-voz').removeClass('active');
+        $(this).addClass('active');
+        var $target = $(this).data('target');
+        if ($target != 'all') {
+            $('#tbLocutores tr').hide();
+            $('#tbLocutores tr [filtro-horario*="' + $target + '"]').closest('tr').fadeIn();
+        } else {
+            $('#tbLocutores tr').css('display', 'none').fadeIn();
+        }
+    });
+    $('.btn-filter-voz').on('click', function () {
+        $('.btn-speed').removeClass('active');
+        $('.btn-filter').removeClass('active');
+        $('.btn-filter-voz').removeClass('active');
+        $(this).addClass('active');
+        var $target = $(this).data('target');
+        if ($target != 'all') {
+            $('#tbLocutores tr').hide();
+            $('#tbLocutores tr [filtro-voz*="' + $target + '"]').closest('tr').fadeIn();
+        } else {
+            $('#tbLocutores tr').css('display', 'none').fadeIn();
+        }
+    });
+});
+
+function atualizarFiltros() {
+    $('.btn-filter-voz.active').click();
+    $('.btn-filter.active').click();
+}
