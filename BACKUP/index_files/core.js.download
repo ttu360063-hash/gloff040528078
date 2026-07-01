@@ -1,0 +1,2455 @@
+/* Formulários */
+var Formularios = function() {
+    var ajax = function(){
+        $('.ajax').each(function(e){
+
+            var formulario = $(this);
+
+            $(this).validate({
+                rules: {
+                    cpf: {
+                        cpf: true,
+                    },
+                    cnpj: {
+                        cnpj: true,
+                    },
+                },
+                messages: {
+                },
+                submitHandler: function( form ){
+
+                    dados = new FormData($(form).get(0));
+                    reloadOnError = $(form).attr('reloadOnError');
+                    $.ajax({
+                        type: "POST",
+                        dataType: "json",
+                        url: $(form).attr('action'),
+                        data: dados,
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        timeout: 60000,
+                        beforeSend: function() {
+                            loader(form);
+                        },
+                        success: function( data ) {
+                            unload(form);
+                            retornoAjax(data);
+                        },
+                        error: function( data ) {
+                            unload(form);
+                            ajaxErro(data);
+                            if(data.href == 'reload') {
+                                setTimeout( function(){
+                                    window.location.reload()
+                                }, 1500)
+                            } else if (data.href) {
+                                setTimeout( function(){
+                                    window.location.href = data.href
+                                }, 1500)
+                            }
+                        },
+                        completed: function (data) {
+                            unload(form);
+                        }
+                    });
+                    return false;
+                }
+            });
+        });
+    };
+
+    var completed = function() {
+        $(document).ajaxStop(function(){
+            feather.replace();
+        });
+    }
+
+    return {
+        init: function () {
+            // Init Login Form Validation
+            ajax();
+            completed();
+        }
+    };
+}();
+jQuery(document).ready(function() {
+    Formularios.init();
+    try {
+        window.markAjaxScriptLoaded();
+    } catch(error) {
+        console.log(error);
+    }
+});
+
+jQuery.validator.addMethod("cpf", function(value, element) {
+  return validar(element, 'cpf-cnpj');
+}, "Por favor, insira um CPF válido.");
+
+jQuery.validator.addMethod("cnpj", function(value, element) {
+  return validar(element, 'cpf-cnpj');
+}, "Por favor, insira um CNPJ válido.");
+
+
+$(".fone").inputmask(["(99) 9999-9999", "(99) 9 9999-9999"], {
+    placeHolder: '_ ',
+    keepStatic: true
+});
+$(".cpf").inputmask(["999.999.999-99"], {
+    keepStatic: true
+});
+$(".cnpj").inputmask(["99.999.999/9999-99"], {
+    keepStatic: true
+});
+$('.cpf-cnpj').each(function() {
+    $(this).inputmask({
+      mask: ['999.999.999-99', '99.999.999/9999-99'],
+      keepStatic: true,
+    });
+})
+$('.credit-card').each(function() {
+    $(this).inputmask({
+      mask: ['9999 9999 9999 9999'],
+      keepStatic: false,
+      unmaskAsNumber: true
+    });
+})
+
+$(".cep").inputmask(["99.999-999"], {
+    keepStatic: true
+});
+$(".moeda").inputmask( 'currency', {
+    //autoUnmask: true,
+    radixPoint:",",
+    groupSeparator: ".",
+    allowMinus: false,
+    prefix: '',
+    digits: 2,
+    digitsOptional: false,
+    rightAlign: true,
+    unmaskAsNumber: true
+});
+
+function validar(alvo, tipo) {
+    if(tipo == 'cpf-cnpj') {
+        if( $(alvo).val().length > 14 ) {
+            return validarCNPJ($(alvo).val())
+        } else {
+            return validarCPF($(alvo).val())
+        }
+    }
+
+    if(tipo == 'cpf') {
+        return validarCPF($(alvo).val())
+    }
+
+    if(tipo == 'cnpj') {
+        return validarCNPJ($(alvo).val())
+    }
+}
+    function validarCNPJ(cnpj) {     
+        cnpj = cnpj.replace(/[^\d]+/g,'');
+     
+        if(cnpj == '') return false;
+         
+        if (cnpj.length != 14)
+            return false;
+     
+        // Elimina CNPJs invalidos conhecidos
+        if (cnpj == "00000000000000" || 
+            cnpj == "11111111111111" || 
+            cnpj == "22222222222222" || 
+            cnpj == "33333333333333" || 
+            cnpj == "44444444444444" || 
+            cnpj == "55555555555555" || 
+            cnpj == "66666666666666" || 
+            cnpj == "77777777777777" || 
+            cnpj == "88888888888888" || 
+            cnpj == "99999999999999")
+            return false;
+             
+        // Valida DVs
+        tamanho = cnpj.length - 2
+        numeros = cnpj.substring(0,tamanho);
+        digitos = cnpj.substring(tamanho);
+        soma = 0;
+        pos = tamanho - 7;
+        for (i = tamanho; i >= 1; i--) {
+          soma += numeros.charAt(tamanho - i) * pos--;
+          if (pos < 2)
+                pos = 9;
+        }
+        resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (resultado != digitos.charAt(0))
+            return false;
+             
+        tamanho = tamanho + 1;
+        numeros = cnpj.substring(0,tamanho);
+        soma = 0;
+        pos = tamanho - 7;
+        for (i = tamanho; i >= 1; i--) {
+          soma += numeros.charAt(tamanho - i) * pos--;
+          if (pos < 2)
+                pos = 9;
+        }
+        resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (resultado != digitos.charAt(1))
+              return false;
+               
+        return true;
+    }
+
+    function validarCPF(cpf) {
+        cpf = cpf.replace(/[^\d]+/g,'');
+     
+        if(cpf == '') return false;
+         
+        if (cpf.length != 11)
+            return false;
+
+        if (cpf == "00000000000" ||
+            cpf == "11111111111" ||
+            cpf == "22222222222" ||
+            cpf == "33333333333" ||
+            cpf == "44444444444" ||
+            cpf == "55555555555" ||
+            cpf == "66666666666" ||
+            cpf == "77777777777" ||
+            cpf == "88888888888" ||
+            cpf == "99999999999")
+            return false;
+
+        add = 0;
+
+        for (i = 0; i < 9; i++) {
+            add += parseInt(cpf.charAt(i)) * (10 - i);
+        }
+        rev = 11 - (add % 11);
+        if (rev == 10 || rev == 11)
+            rev = 0;
+        if (rev != parseInt(cpf.charAt(9)))
+            return false;
+        add = 0;
+                for (i = 0; i < 10; i++)
+                add += parseInt(cpf.charAt(i)) * (11 - i);
+        rev = 11 - (add % 11);
+        if (rev == 10 || rev == 11)
+            rev = 0;
+        if (rev != parseInt(cpf.charAt(10)))
+            return false;
+        return true;
+    }
+
+/* Ratting */
+/* Avaliações */
+var BaseCompRating = function() {
+
+    // Init Modal
+    var initModal = function(){
+        $(document).on('click', '[avaliarPedido]', function(e){
+            pedido = parseInt($(this).attr('avaliarPedido'));
+            locutor = parseInt($(this).attr('locutor'));
+            produtor = parseInt($(this).attr('produtor'));
+            $('[modal-avaliar_pedido]').val(pedido);
+            $('[modal-avaliar_locutor]').val(locutor);
+            $('[modal-avaliar_produtor]').val(produtor);
+            $('[avaliarPedidoID]').html(pedido);
+            $('[modal-avaliar_nota]').val(0);
+            $('[modal-avaliar_nota_produtor]').val(0);
+            if(produtor == 0) {
+                $('[modal-avaliar_produtor_div]').hide();
+                $('[modal-avaliacao_pedido_produtor]').attr('data-score', '0');
+            } else {
+                $('[modal-avaliar_produtor_div]').show();
+            }
+            $('[modal-avaliacao_pedido]').attr('data-score', '0');
+            $('[modal-avaliacao_pedido_produtor]').attr('data-score', '0');
+            initRating();
+            $('#modal-avaliar').modal('show');
+        })
+        $('#modal-avaliar').on('hidden.bs.modal', function () {
+            $('[modal-avaliar_pedido]').val('');
+            $('[modal-avaliar_locutor]').val('');
+            $('[modal-avaliacao_pedido]').attr('data-score', '0');
+            $('[modal-avaliacao_pedido_produtor]').attr('data-score', '0');
+            $('[modal-avaliar_comentario]').val('');
+        })
+    };
+
+
+    // Init Rating
+    var initRating = function(){
+        // Set Default options
+        jQuery.fn.raty.defaults.starType    = 'i';
+        jQuery.fn.raty.defaults.hints       = ['Péssimo', 'Ruim', 'Regular', 'Bom', 'Ótimo'];
+
+        // Init Raty on .js-rating class
+        jQuery('.js-rating').each(function(){
+            var $ratingEl = jQuery(this);
+            $ratingEl.raty({
+                score: $ratingEl.data('score') ? $ratingEl.data('score') : 0,
+                number: $ratingEl.data('number') ? $ratingEl.data('number') : 5,
+                cancel: $ratingEl.data('cancel') ? $ratingEl.data('cancel') : false,
+                target: $ratingEl.data('target') ? $ratingEl.data('target') : false,
+                targetScore: $ratingEl.data('avaliar-score') ? $ratingEl.data('avaliar-score') : false,
+                precision: $ratingEl.data('precision') ? $ratingEl.data('precision') : false,
+                cancelOff: $ratingEl.data('cancel-off') ? $ratingEl.data('cancel-off') : 'fa fa-fw fa-times text-danger',
+                cancelOn: $ratingEl.data('cancel-on') ? $ratingEl.data('cancel-on') : 'fa fa-fw fa-times',
+                starHalf: $ratingEl.data('star-half') ? $ratingEl.data('star-half') : 'fa fa-fw fa-star-half-o text-warning',
+                starOff: $ratingEl.data('star-off') ? $ratingEl.data('star-off') : 'fa fa-fw fa-star text-gray',
+                starOn: $ratingEl.data('star-on') ? $ratingEl.data('star-on') : 'fa fa-fw fa-star text-warning',
+
+                click: function(score, evt) {
+                    console.log(score, evt)
+                    $('[modal-avaliar_avaliacao]').val(score);
+                }
+            });
+        });
+
+        jQuery('.js-rating-view').each(function(){
+            var $ratingEl = jQuery(this);
+            $ratingEl.raty({
+                score: $ratingEl.data('score') ? $ratingEl.data('score') : 0,
+                number: $ratingEl.data('number') ? $ratingEl.data('number') : 5,
+                cancel: $ratingEl.data('cancel') ? $ratingEl.data('cancel') : false,
+                target: $ratingEl.data('target') ? $ratingEl.data('target') : false,
+                targetScore: $ratingEl.data('target-score') ? $ratingEl.data('target-score') : false,
+                precision: $ratingEl.data('precision') ? $ratingEl.data('precision') : false,
+                cancelOff: $ratingEl.data('cancel-off') ? $ratingEl.data('cancel-off') : 'fa fa-fw fa-times text-danger',
+                cancelOn: $ratingEl.data('cancel-on') ? $ratingEl.data('cancel-on') : 'fa fa-fw fa-times',
+                starHalf: $ratingEl.data('star-half') ? $ratingEl.data('star-half') : 'fa fa-fw fa-star-half-o text-warning',
+                starOff: $ratingEl.data('star-off') ? $ratingEl.data('star-off') : 'fa fa-fw fa-star text-gray',
+                starOn: $ratingEl.data('star-on') ? $ratingEl.data('star-on') : 'fa fa-fw fa-star text-warning',
+                click: function(score, evt) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    return false;
+                },
+                mouseover: function(score, evt) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    return false;
+                },
+                mouseout: function(score, evt) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    return false;
+                }
+            });
+        });
+    };
+
+    return {
+        init: function () {
+            // Init all Ratings
+            initModal();
+            initRating();
+        }
+    };
+}();
+// Initialize when page loads
+jQuery(function(){ BaseCompRating.init(); });
+
+// Data Table
+var Tabelas = function() {
+    $.fn.dataTable.ext.errMode = 'throw';
+    var ajax = function() {
+        $(".dataTable:visible:not(.tableInitialized)").each(function() {
+
+            $(this).addClass('tableInitialized');
+
+            tabela = $(this);
+
+            if ($.fn.DataTable.isDataTable(tabela)) {
+                $(this).addClass('tableInitialized');
+                return;
+            };
+
+            pagina = $(this).attr('pagina') ? $(this).attr('pagina') : 10;
+            colum_target = $(this).attr('target') ? $(this).attr('target') : 0;
+            orderable = $(this).attr('orderable') ? $(this).attr('orderable') : true;
+            coluna = $(this).attr('orderBy') ? $(this).attr('orderBy') : 0;
+            ordem = $(this).attr('order') ? $(this).attr('order') : 'asc';
+
+            $(this).DataTable({
+                columnDefs: [ { orderable: orderable, targets: [colum_target] } ],
+                pageLength: pagina,
+                lengthMenu: [[10, 25, 50, 100],[10, 25, 50, 100]],
+                order: [[coluna, ordem]],            
+                createdRow: function (row, data, index) {
+                    $(row).addClass("intro-y");
+                },
+                language: {
+                    "url": PATH+"publico/plugins/jquery-datatable/pt-br.js"
+                }
+            });
+            $(this).on('processing.dt', function (e, settings, processing) {
+                if (processing) {
+                    loader(this);
+                } else {
+                    unload(this);
+                }
+            })
+            if(pesquisa = $(this).attr('pesquisa')) {
+                
+                $input = $('#fPesquisa'+pesquisa).find('input[name=pesquisa]');
+
+                $('#fPesquisa'+pesquisa).on('submit', function (e) {
+                    e.preventDefault();
+                    $(tabela).DataTable().search(
+                        $($input).val()
+                    ).draw();
+                });
+                $('#fPesquisa'+pesquisa).delayKeyup(function(e){
+                    $(tabela).DataTable().search(
+                        $($input).val()
+                    ).draw();
+                }, 300);
+                $('#fPesquisa'+pesquisa).on('reset', function (e) {
+                    $(tabela).DataTable().search(
+                        ''
+                    ).draw();
+                });
+            }
+        });
+    };
+    var local = function() {
+        $(".tabelaLocal:not(.dataTable)").each(function() {
+            tabela = $(this);
+            DOM = $(this).attr('dom');
+            pagina = $(this).attr('pagina') ? $(this).attr('pagina') : 10;
+            colum_target = $(this).attr('target') ? $(this).attr('target') : 0;
+            orderable = $(this).attr('orderable') ? $(this).attr('orderable') : true;
+            coluna = $(this).attr('orderBy') ? $(this).attr('orderBy') : 0;
+            ordem = $(this).attr('order') ? $(this).attr('order') : 'asc';
+            $(this).DataTable({
+                autoWidth: false,
+                lengthChange: true,
+                paging: true,
+                dom: (DOM ? DOM : '<"row d-flex justify-content-between"<"col-auto"f><"col-auto"l>>t<"d-flex justify-content-between mx-0 row"<"col-auto"i><"col-auto"p>>'),
+                columnDefs: [ { orderable: orderable, targets: [colum_target] } ],
+                pageLength: pagina,
+                lengthMenu: [[10, 25, 50, 100, 100000],[10, 25, 50, 100, "Todos"]],
+                order: [[coluna, ordem]],
+                language: {
+                    "emptyTable": "Nenhum registro encontrado",
+                    "info": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
+                    "infoEmpty": "Mostrando 0 até 0 de 0 registros",
+                    "infoFiltered": "(Filtrados de _MAX_ registros)",
+                    "infoThousands": ".",
+                    "loadingRecords": "Carregando...",
+                    "processing": "Processando...",
+                    "zeroRecords": "Nenhum registro encontrado",
+                    "search": "", // Pesquisar
+                    "paginate": {
+                        "next": "Próximo",
+                        "previous": "Anterior",
+                        "first": "Primeiro",
+                        "last": "Último"
+                    },
+                    "aria": {
+                        "sortAscending": ": Ordenar colunas de forma ascendente",
+                        "sortDescending": ": Ordenar colunas de forma descendente"
+                    },
+                    "select": {
+                        "rows": {
+                            "_": "Selecionado %d linhas",
+                            "0": "Nenhuma linha selecionada",
+                            "1": "Selecionado 1 linha"
+                        },
+                        "1": "%d linha selecionada",
+                        "_": "%d linhas selecionadas",
+                        "cells": {
+                            "1": "1 célula selecionada",
+                            "_": "%d células selecionadas"
+                        },
+                        "columns": {
+                            "1": "1 coluna selecionada",
+                            "_": "%d colunas selecionadas"
+                        }
+                    },
+                    "buttons": {
+                        "copySuccess": {
+                            "1": "Uma linha copiada com sucesso",
+                            "_": "%d linhas copiadas com sucesso"
+                        },
+                        "collection": "Coleção  <span class=\"ui-button-icon-primary ui-icon ui-icon-triangle-1-s\"><\/span>",
+                        "colvis": "Visibilidade da Coluna",
+                        "colvisRestore": "Restaurar Visibilidade",
+                        "copy": "Copiar",
+                        "copyKeys": "Pressione ctrl ou u2318 + C para copiar os dados da tabela para a área de transferência do sistema. Para cancelar, clique nesta mensagem ou pressione Esc..",
+                        "copyTitle": "Copiar para a Área de Transferência",
+                        "csv": "CSV",
+                        "excel": "Excel",
+                        "pageLength": {
+                            "100000": "Mostrar todos os registros",
+                            "1": "Mostrar 1 registro",
+                            "_": "Mostrar %d registros"
+                        },
+                        "pdf": "PDF",
+                        "print": "Imprimir"
+                    },
+                    "autoFill": {
+                        "cancel": "Cancelar",
+                        "fill": "Preencher todas as células com",
+                        "fillHorizontal": "Preencher células horizontalmente",
+                        "fillVertical": "Preencher células verticalmente"
+                    },
+                    "lengthMenu": "_MENU_", // Exibir _MENU_ resultados por página
+                    "searchPlaceholder": " Pesquisar",
+                    "thousands": "."
+                } 
+            });
+            $(this).on('processing.dt', function (e, settings, processing) {
+                if (processing) {
+                    Loading(this);
+                } else {
+                    unLoading(this);
+                    reloadScripts();
+                }
+            })
+        });
+    };
+    var observer = function() {
+        const observer = new MutationObserver(() => {
+            ajax();
+        });
+        observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+    }
+    return {
+        init: function() {
+            ajax();
+            local();
+            observer();
+        }
+    }
+}(); jQuery(document).ready(function() { Tabelas.init(); });
+
+// Bonificação
+$(function () {
+    $(document).on('click', '[bonificarPedido]', function(e){
+        pedido = $(this).attr('bonificarPedido');
+        locutor = $(this).attr('locutor');
+        $('[bonificarPedidoID]').html(pedido);
+        $('[modal-bonificar_pedido]').val(pedido);
+        $('#modal-bonificar').modal('toggle');
+    })
+    $('#modal-avaliar').on('hidden.bs.modal', function () {
+        $('[modal-bonificar_pedido]').val('');
+        $('[modal-bonificar_comentario]').val('');
+    })
+});
+
+$.fn.serializeObject = function() {
+    var o = {};
+    var a = this.serializeArray();
+    $.each(a, function() {
+        if (o[this.name]) {
+            if (!o[this.name].push) {
+                o[this.name] = [o[this.name]];
+            }
+            o[this.name].push(this.value || '');
+        } else {
+            o[this.name] = this.value || '';
+        }
+    });
+    return o;
+};
+
+$(document).on("change", '[name=timbre]', function(e, inndex, newValue, oldValue) {
+    if($ID = $('#pedido_voz').val()) {
+        $form = $('#formPedir').serializeObject();
+        $estilo = $form.timbre ? $form.timbre : $form.estilo;
+        $.ajax({
+            type: "POST",
+            dataType: "json",
+            url: DIR+"!/disponibilidade",
+            data: 'acao=consultar&locutor='+$ID+'&estilo='+$estilo,
+            success: function( data ) {
+                retornoAjax(data);
+                viewInfoLocutor(data);
+            },
+            error: function( data ) {
+                alert( 'Houve um erro imprevisto. Atualize a página.');
+            }
+        });
+    }
+});
+
+$('#pedido_voz').on("change", function(e) {
+    $ID = $(this).val();
+    $nome = $(this).find('option:selected').text();
+    updateNomeLocutor(this, $nome, $ID);
+    $form = $('#formPedir').serializeObject();
+    $estilo = $form.timbre ? $form.timbre : $form.estilo;
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+"!/disponibilidade",
+        data: 'acao=consultar&locutor='+$ID+'&estilo='+$estilo,
+        success: function( data ) {
+            retornoAjax(data);
+            viewInfoLocutor(data);
+            if(data?.velocidades) {
+                vl = data.velocidades;
+            } else {
+                vl = null;
+            }
+            $('textarea[name=texto]').trigger('change');
+        },
+        error: function( data ) {
+            console.log('Error: '+data.responseText);
+            alert( 'Houve um erro imprevisto. Atualize a página.');
+        }
+    });
+    $('[btnVerHorario]').attr('ver-horario', $ID);
+}); if($('#pedido_voz').val()) { $('#pedido_voz').trigger('change'); }
+
+function updateNomeLocutor($this, $nome, $ID) {
+    index = $($this).attr('data-tail-select').replace('tail-', '');
+    select = $('.tail-select')[index]
+    $(select).find('.select-label .label-inner').html($nome);
+    $(select).find('.dropdown-option').removeClass('selected');
+}
+
+/*
+$('body').on('DOMSubtreeModified', '.ck-editor__editable', function(){
+    if($ta = $(this).closest('[conteudoEditor]').find('textarea')) {
+        texto = $(this).html();
+        $($ta).val(texto).trigger('change');
+    }
+})
+*/
+const targetNode = document.querySelector('.ck-editor__editable');
+const config = { childList: true, subtree: true, characterData: true };
+const callback = function(mutationsList, observer) {
+    for (const mutation of mutationsList) {
+        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+            const $ta = $(mutation.target).closest('[conteudoEditor]').find('textarea');
+            if ($ta.length) {
+                const texto = $(targetNode).html();
+                $($ta).val(texto).trigger('change');
+            }
+        }
+    }
+};
+const observer = new MutationObserver(callback);
+if(targetNode) { observer.observe(targetNode, config); }
+
+function viewInfoLocutor(data) {
+    if (data.off) {
+        $('[ultimoOffPlayer]').html('<audio class="w-full" preload="metadata" controls src="'+data.off+'"></audio>');
+        $('[ultimoOff]').show();
+    } else {
+        $('[ultimoOffPlayer]').html('');
+        $('[ultimoOff]').hide();
+    }
+    if (data.contrato) {
+        $('[hide_contrato]').hide();
+        $('[tempo_comerciais]').html(data.contrato.minutos)
+
+        $('[tempo_institucionais]').html(data.contrato.minutos)
+        $('[tempo_religiosos]').html(data.contrato.minutos)
+        $('[tempo_politico]').html(data.contrato.minutos)
+        $('[tempo_espera]').html(data.contrato.minutos)
+
+        if (data.contrato.obs && data.contrato.status) {
+            $('[contrato_obs]').show().html(data.contrato.obs);
+        } else {
+            $('[contrato_obs]').hide();
+        }
+
+        $('[contrato_institucionais='+data.contrato.institucionais+']').show();
+        $('[contrato_religiosos='+data.contrato.religiosos+']').show();
+        $('[contrato_politico='+data.contrato.politico+']').show();
+        $('[contrato_espera='+data.contrato.espera+']').show();
+        $('[contrato_locutor]').show();
+    } else {
+        $('[contrato_locutor]').hide();
+    }
+}
+
+$(document).on('keydown', '[estilo]', function(){
+    $ID = $('#pedido_voz').val();
+    $estilo = $(this).val();
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+"!/disponibilidade",
+        data: 'acao=consultar&locutor='+$ID+'&estilo='+$estilo,
+        success: function( data ) {
+            if (data.off) {
+                $('[ultimoOffPlayer]').html('<audio class="w-full" preload="metadata" controls src="'+data.off+'"></audio>');
+                $('[ultimoOff]').show();
+            } else {
+                $('[ultimoOffPlayer]').html('');
+                $('[ultimoOff]').hide();
+            }
+        },
+        error: function( data ) {
+            console.log('Error: '+data.responseText);
+            alert( 'Houve um erro imprevisto. Atualize a página.');
+        }
+    });
+});
+
+function triggerChangeLocutor($ID) {
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+"!/disponibilidade",
+        data: 'acao=consultar&locutor='+$ID,
+        success: function( data ) {
+            retornoAjax(data);
+            if (data.contrato) {
+                $('[hide_contrato]').hide();
+                $('[tempo_comerciais]').html(data.contrato.minutos)
+
+                $('[tempo_institucionais]').html(data.contrato.minutos)
+                $('[tempo_religiosos]').html(data.contrato.minutos)
+                $('[tempo_espera]').html(data.contrato.minutos)
+
+                $('[contrato_religiosos='+data.contrato.religiosos+']').show();
+                $('[contrato_espera='+data.contrato.espera+']').show();
+                $('[contrato_institucionais='+data.contrato.institucionais+']').show();
+                $('[contrato_locutor]').show();
+            } else {
+                $('[contrato_locutor]').hide();
+            }
+        },
+        error: function( data ) {
+            console.log('Error: '+data.responseText);
+            alert( 'Houve um erro imprevisto. Atualize a página.');
+        }
+    });
+}
+
+$(document).on('click', '[ver-horario]', function(e){
+    btn = $(this);
+    locutor = $(this).attr('ver-horario');
+    $.ajax({
+        type: "POST",
+        dataType: "html",
+        url: DIR+'!/disponibilidade',
+        data: 'acao=consultar-horarios&locutor='+locutor,
+        beforeSend: function() {
+            loader(btn);
+        },
+        success: function( data ) {
+            $('#modal-horarios [data-horarios]').html(data);
+            $('#modal-horarios').modal('show');
+            unload(btn);
+        },
+        error: function( data ) {
+            unload(btn);
+            ajaxErro();
+        },
+        completed: function () {
+            unload(btn);
+        },
+    });
+})
+
+
+function retornoAjax(r, extra = false) {
+
+    if (typeof r !== 'object') {
+        console.log(r);
+        ajaxErro();
+        return;
+    }
+
+    // Reset
+    if (r.reset) {
+        /* FIX */
+        $(r.reset).trigger("reset");
+        if ( $('.dropzone').length > 0 ) {
+            Dropzone.forElement(".dropzone").removeAllFiles(true);
+        }
+        if (controle = $("[controle]")) {
+            controle.attr('value', 0);
+        }
+    }
+
+    // Mensagens
+    if(r.titulo || r.msg) {
+        alerta(r.mtipo, r.titulo, r.msg);
+    }
+
+    // Seleciona Foco
+    if (r.focus) {
+        $(r.focus).select();
+        //$.scrollTo(r.focus);
+    }
+
+    // Novo Formulario
+    if (r.novo_formulario) {
+        $("[formulario]").attr("value", r.novo_formulario);
+    }
+
+    // JavaScript
+    if (r.js) {
+        eval(r.js)
+    }
+    // JavaScript
+    if (r.jQuery) {
+        eval(r.jQuery)
+    }
+
+    // Clear
+    if (r.clear) {
+        $(r.clear).val('');
+    }
+
+    // Select
+    if( r.select ) {
+        $(r.select).select();
+    }
+
+    // Redirecionamento
+    if (r.href) {
+        if (r.href == 'reload') {
+            setTimeout( function(){
+                window.location.reload()
+            }, 1500)
+        } else {
+            setTimeout( function(){
+                window.location.href = r.href
+            }, 1500)
+        }
+    }
+
+    // Download
+    if (r.download) {
+        setTimeout( function(){
+            var iframe = document.createElement('iframe');
+            iframe.ID = r.download;
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            iframe.src = DIR+'!/download/?d='+ r.download;
+            
+            if(extra) {
+                prontos = $('[prontos]');
+                antigo = $('[prontos]').first().html();
+                atual = parseInt(antigo-1);
+                if(atual > 0) {
+                    prontos.html(atual);
+                } else {
+                    prontos.remove();
+                }
+                extra.remove();
+            }
+
+        }, 1000);
+    }
+
+    // Toggle Modal
+    if (r.modal) {
+        if($(r.modal).hasClass('show')) {
+            $(r.modal).modal('toggle');
+        }
+    }
+
+    // Draw
+    if(r.draw) {
+        $(r.draw).each( function() {
+            $tabela = $('#'+$(this).attr('id')).DataTable();
+            pagina = $tabela.page();
+            $tabela.page(pagina).draw('page');
+        })
+    }
+}
+
+function ajaxErro(e) {
+    alerta('danger', 'Falha ao Executar', 'Atualize a página e tente novamente.');
+    throw new Error(e);
+    if(e) {
+        console.group('Falha ao executar ajax');
+        console.log()
+        console.groupEnd('Falha ao executar ajax');
+    }
+}
+
+/**/ // COOKIES
+function cCookie(name,value,days) {
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime()+(days*24*60*60*1000));
+        var expires = "; expires="+date.toGMTString();
+    }
+    else var expires = "";
+    document.cookie = name+"="+value+expires+"; path=/";
+}
+// Deletar Cookie
+function dCookie(name) {
+    cCookie(name,"",-1);
+}
+
+function cCookieHs(name,value,hs) {
+    if (hs) {
+        var date = new Date();
+        date.setTime(date.getTime()+(hs*60*60*1000));
+        var expires = "; expires="+date.toGMTString();
+    }
+    else var expires = "";
+    document.cookie = name+"="+value+expires+"; path=/";
+}
+
+
+var uploader;
+
+//## UPLOAD
+if($('.dropzone').length) {
+    
+    $('.dropzone').each(function(){
+        var dropzone = $(this);
+        var formulario = $("[formulario]");
+        var controle = $("[controle]");
+        var pedido = $("[pedido]");
+        var submit = $(controle.attr('submit'));
+
+        // MaxFiles
+        if( $(this).attr('maxFiles') ) {
+            _maxFiles = $(this).attr('maxFiles')
+        } else {
+            _maxFiles = 100;
+        }
+
+        // extFilter
+        if ($(['extFilter']).length) {
+            _extFilter = $(dropzone).attr('extFilter');
+        } else {
+            _extFilter = 'audio/*, image/*, video/*, application/pdf, .doc, .opus, .ogg, .wav, .wave, .docx, text/*, audio/*;capture=microphone;capture=camera';
+        }
+
+        // Cliente
+        if ($(['cliente']).length) {
+            _cliente = $("[cliente]").attr('cliente');
+        } else {
+            _cliente = false;
+        }
+
+        uploader = new Dropzone(this, { // Make the whole body a dropzone
+
+          url: DIR+"!/upload", // Set the url
+          parallelUploads: 1,
+          maxFiles: _maxFiles,
+          maxFilesize: 200, //mb
+          acceptedFiles: _extFilter, //
+          //previewTemplate: previewTemplate,
+          autoQueue: true, // Make sure the files aren't queued until manually added
+          //previewsContainer: "#previews", // Define the container to display the previews
+          //clickable: ".fileinput-button" // Define the element that should be used as click trigger to select files.,
+
+          thumbnailWidth: 50,
+          thumbnailHeight: 50,
+          thumbnailHeight: 50,
+
+          addRemoveLinks: true,
+
+          createImageThumbnails: false,
+
+          //previewTemplate: '<li class="list-group-item"><span data-dz-name></span><span class="badge badge-success dz-success-mark">✔ Concluído</span><span class="badge badge-danger dz-error-message">✘ <span data-dz-errormessage></span></span><div class="progress m-t-5"><div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" data-dz-uploadprogress><span class="sr-only">0%</span></div></div></li>',
+
+          removedfile: function(file) {
+            
+            if (file.status == 'success') {
+                r = JSON.parse(file.xhr.response);
+                $.ajax({
+                    type: 'POST',
+                    url: DIR+'!/upload',
+                    data: "tipo=deletar&arquivo="+r.ID,
+                    dataType: 'html'
+                });
+                var v = parseInt(controle.val())-parseInt(1);
+                controle.attr('value', v);
+
+                if(funcao = dropzone.attr('fnCalc')) {
+                    eval(funcao);
+                }
+            }
+
+            var _ref;
+            return (_ref = file.previewElement) != null ? _ref.parentNode.removeChild(file.previewElement) : void 0;
+          },
+          dictDefaultMessage: "Clique ou arraste até aqui seus arquivos.",
+          dictFallbackMessage: "Seu navegador não suporta arrastar e soltar uploads de arquivos.",
+          dictFallbackText: "Por favor, use o formulário abaixo para enviar seus arquivos como nos velhos tempos.",
+          dictFileTooBig: "Arquivo muito grande ({{filesize}}mb). Máximo permitido: {{maxFilesize}}mb.",
+          dictInvalidFileType: "Você não pode carregar este tipo de arquivo. {{fileType}}",
+          dictResponseError: "Server responded with {{statusCode}} code.",
+          dictCancelUpload: "Cancelar",
+          dictCancelUploadConfirmation: "Tem certeza que deseja cancelar?",
+          dictRemoveFile: "Excluir",
+          dictRemoveFileConfirmation: 'Tem certeza que deseja excluir este arquivo carregado?',
+          dictMaxFilesExceeded: "Você não pode carregar mais arquivos.",
+
+
+        });
+        /*
+        "drop", "dragstart", "dragend", "dragenter", "dragover", "dragleave",
+        "addedfile", "addedfiles", "removedfile", "thumbnail", "error", "errormultiple",
+        "processing", "processingmultiple", "uploadprogress", "totaluploadprogress",
+        "sending", "sendingmultiple", "success", "successmultiple", "canceled",
+        "canceledmultiple", "complete", "completemultiple", "reset", "maxfilesexceeded",
+        "maxfilesreached", "queuecomplete";
+        */
+        // Start UPLOADS:
+        uploader.on('addedfile', function(file, xhr, formData){
+            controle.attr('uploader', 0);
+            controle.attr('checkout', 0);
+            loader(file.previewElement);
+        });
+
+        // Envia Informações de Sessão e Usuário
+        uploader.on('sending', function(file, xhr, formData){
+
+            formData.append('formulario', dropzone.attr('formulario') ? dropzone.attr('formulario') : $("[formulario]").val());
+            formData.append('pedido', dropzone.attr('pedido') ? dropzone.attr('pedido') : $("[controle]").attr('pedido'));
+            formData.append('tipo', dropzone.attr('tipo') ? dropzone.attr('tipo') : $("[controle]").attr('tipo'));
+            formData.append('cliente', dropzone.attr('cliente') ? dropzone.attr('cliente') : $("[controle]").attr('cliente'));
+
+            controle.attr('uploader', 0);
+            controle.attr('checkout', 0);
+            
+        });
+        // Completar UPLOADS:
+        uploader.on('queuecomplete', function(file, xhr, formData){
+            
+            controle.attr('uploader', 1);
+            if ($(controle).attr('envio') == 1 || $(dropzone).attr('envio') == 1) {
+                submit.submit();
+            }
+            conclusao = dropzone.attr('conclusao')
+            if (typeof conclusao !== typeof undefined && conclusao !== false) {
+                eval(dropzone.attr('conclusao'));
+            }
+
+            if(funcao = dropzone.attr('fnCalc')) {
+                eval(funcao);
+            }
+
+        });
+        // Success
+        uploader.on("success", function(file, r) {
+            var v = parseInt(controle.val())+parseInt(1);
+            controle.attr('value', v);
+            $(file.previewElement).waitMe('hide');
+        });
+    })
+}
+
+// DOWNLOAD
+$(document).on( 'click', '[download]:not([downloadDireto])', function (e) {
+    e.preventDefault(e);
+    btn = $(this);
+    alvo = $(this).attr('download');
+    pedido = $(this).attr('pedido');
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+"!/download/",
+        data: "arquivo="+alvo+'&s='+pedido,
+        success: function( data) {
+            retornoAjax(data);
+            btn.removeClass('btn-success').addClass('btn-info');
+        },
+        error: function( data ) {
+            alert( 'Houve um erro imprevisto. Atualize a página.');
+        }
+    });
+});
+
+// DOWNLOAD DEMO
+$(document).on( 'click', '[downloadDemos]', function (e) {
+    e.preventDefault(e);
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+"!/download/",
+        data: "demos=true",
+        beforeSend: function() {
+            swal({
+                title: "Esta ação pode demorar algum tempo.",
+                text: "Estamos trabalhando para gerar um arquivo zipado de todos os demos disponíveis, aguarde enquanto este arquivo é criado.",
+                type: "info",
+                showCancelButton: false,
+                showConfirmButton: false
+            });
+        },
+        success: function( data) {
+            retornoAjax(data);
+            swal.close();
+        },
+        error: function( data ) {
+            swal.close();
+            alert( 'Houve um erro imprevisto. Atualize a página.');
+        },
+        onCompleted: function() {
+            swal.close();
+        }
+    });
+});
+
+// EXCLUIR
+$('[excluir]').click(function(e){
+    e.preventDefault(e);
+    alvo = $(this).attr('excluir');
+    $('[alvo-excluir]').attr('value', alvo);
+    
+    $('#modal-excluir').modal('show');
+    
+    $('#modal-excluir').on('hidden.bs.modal', function () {
+       $('[alvo-excluir]').attr('value', '');
+    });
+});
+
+// RECUSAR
+$('[recusar]').click(function(e){
+    e.preventDefault(e);
+    alvo = $(this).attr('recusar');
+    produto = $(this).attr('produto');
+
+    $('[alvo-recusar]').attr('value', alvo);
+
+    if (produto > 1) {
+        $('[tipo-producao]').removeAttr('disabled').removeClass('hidden');
+    } else {
+        $('[tipo-producao]').attr('disabled', true).addClass('hidden');
+    }
+    
+    $('#modal-recusar').modal('show');
+    
+    $('#modal-recusar').on('hidden.bs.modal', function () {
+       $('[alvo-recusar]').attr('value', '');
+       $('[motivo-recusar]').val('');
+    });
+});
+
+
+// TOGGLE BLOCKS
+$('[click]').on('click', function(e){
+    e.preventDefault(e);
+    if ( $(this).parent().hasClass('block-opt-hidden') ) {
+
+        $(this).parent().removeClass('block-opt-hidden');        
+        $(this).find('i').addClass('si-arrow-up');
+        $(this).find('i').removeClass('si-arrow-down');
+
+    } else {
+
+        $(this).parent().addClass('block-opt-hidden');
+        $(this).find('i').removeClass('si-arrow-up');
+        $(this).find('i').addClass('si-arrow-down');
+    }
+});
+
+// TOGGLE BLOCKS
+$('[link]').on('click', function(e){
+    e.preventDefault(e);
+    window.location.href = $(this).attr('link');
+});
+
+
+$(function() {
+    $(document).on('click', '[tempo]:not(.disabled)', function(e){
+        e.preventDefault(e);
+        tempo = $(this).attr('tempo');
+        frase = $(this).attr('mensagem') ? $(this).attr('mensagem') : 'Volto já';
+        $.ajax({
+            type: "POST",
+            dataType: "json",
+            url: DIR+"!/tempo",
+            data: "tempo="+tempo+'&frase='+frase,
+            success: function( data) {
+                retornoAjax(data);
+                if(data.success) {
+                    $('[HorarioAtivo]').html(data.texto);
+                    $('[btnHorarioAtivo]')                        
+                        .removeClass('bg-theme-18 text-theme-9')
+                        .removeClass('bg-theme-17 text-theme-11')
+                        .removeClass('bg-theme-31 text-theme-6')
+                        .removeClass('bg-gray-400 text-gray-600')
+                        .addClass(data.cor)
+                }
+            },
+            error: function( data ) {
+                alert( 'Houve um erro imprevisto. Atualize a página.');
+            }
+        });
+    });
+    $(document).on('click', '[tempo_usuario]', function(e){
+        e.preventDefault(e);
+        tempo = $(this).attr('tempo_usuario');
+        usuario = $(this).attr('usuario');
+        frase = $(this).attr('mensagem') ? $(this).attr('mensagem') : 'Volto já';
+        $.ajax({
+            type: "POST",
+            dataType: "json",
+            url: DIR+"!/tempo",
+            data: "tempo="+tempo+"&usuario="+usuario+'&frase='+frase,
+            success: function( data) {
+                retornoAjax(data);
+                if(data.success) {
+                    $('[usuarioHorarioAtivo]').html(data.texto);
+                    $('[btnUsuarioHorarioAtivo]')                        
+                        .removeClass('bg-theme-18 text-theme-9')
+                        .removeClass('bg-theme-17 text-theme-11')
+                        .removeClass('bg-theme-31 text-theme-6')
+                        .removeClass('bg-gray-400 text-gray-600')
+                        .addClass(data.cor)
+                }
+            },
+            error: function( data ) {
+                alert( 'Houve um erro imprevisto. Atualize a página.');
+            }
+        });
+    });
+    $(document).on('click', '[tempo_offline]', function(e){
+        e.preventDefault(e);
+        tempo = $(this).attr('tempo_usuario');
+        usuario = $(this).attr('usuario');
+        auto = $(this).attr('tempo_auto');
+        if(auto == 1) {
+            $('[ferias_parte1_self]').show();
+            $('[ferias_parte1]').hide();
+            $('[ferias_parte2]').hide();
+        } else {
+            $('[ferias_parte1]').show();
+            $('[ferias_parte1_self]').hide();
+            $('[ferias_parte2]').hide();
+        }
+        $('[modal-offline_usuario]').attr('usuario', usuario);
+        $('#modal-offline_usuario').val(usuario);
+        $('#modal-offline').modal('toggle');
+    });
+    $(document).on('click', '[tempo_ferias]', function(e){
+        e.preventDefault(e);
+        tempo = $(this).attr('tempo_usuario');
+        usuario = $(this).attr('usuario');
+        $('[ferias_parte1]').hide();
+        $('[ferias_parte2]').show();
+        $('#modal-offline_usuario').val(usuario);
+        $('#modal-offline').modal('toggle');
+    })
+})
+
+
+
+
+
+
+
+var Saida = function() {
+    var vInformar = function(){
+        jQuery('.js-adicionar-saida').each( function() {
+            $($(this)).validate({
+                errorClass: 'help-block text-right animated fadeInDown hidden',
+                errorElement: 'div',
+                errorPlacement: function(error, e) {
+                    jQuery(e).parents('.form-group > div').append(error);
+                },
+                highlight: function(e) {
+                    jQuery(e).closest('.form-group').removeClass('has-error').addClass('has-error');
+                    jQuery(e).closest('.help-block').remove();
+                },
+                success: function(e) {
+                    jQuery(e).closest('.form-group').addClass('has-error').removeClass('has-error');                
+                    jQuery(e).closest('.help-block').remove();
+                },
+                rules: {
+                    final: {
+                        required: true,
+                    },
+                    mensagem: {
+                        required: true,
+                        minlength: 5
+                    }
+                },
+                messages: {
+
+                },
+                submitHandler: function( form ){
+                    console.log(form)
+                    
+                    var dados = $( form ).serialize();
+                    var action = $( form ).attr('action');
+
+                    $.ajax({
+                        type: "POST",
+                        dataType: "json",
+                        url: action,
+                        data: dados,
+                        beforeSend: function() {
+                            $('#block-adicionar-saida').addClass('block-opt-refresh');
+                            $(this).find('input, textarea, button, select').attr('disabled', true);
+                        },
+                        success: function( data ) {
+                            $('#block-adicionar-saida').removeClass('block-opt-refresh');
+                            $(this).find('input, textarea, button, select').removeAttr('disabled');
+                            retornoAjax(data);
+                        },
+                        error: function( data ) {
+                            $('#block-adicionar-saida').removeClass('block-opt-refresh');
+                            $(this).find('input, textarea, button, select').removeAttr('disabled');
+                            ajaxErro(data)
+                        }
+                    });
+
+                    return false;
+                }
+            });
+        });
+    };
+    return {
+        init: function () {
+            vInformar()
+        }
+    };
+}();
+jQuery(function(){ Saida.init(); });
+
+
+document.addEventListener('play', function(e){
+    var audios = document.getElementsByTagName('audio');
+    for(var i = 0, len = audios.length; i < len;i++){
+        if(audios[i] != e.target){
+            audios[i].pause();
+        }
+    }
+}, true);
+
+/* FIX SCROLL TAB LOAD of HASH URL */
+/*
+$(window).on('shown.bs.tab', function (e) {
+    $('[data-toggle=tab]').removeClass('active');
+    $(e.target).addClass('active').blur();
+    if(history.pushState) {
+        history.pushState(null, null, e.target.hash);
+    }
+    else {
+        location.hash = e.target.hash;
+    }
+})
+*/
+
+
+
+function verificaHash() {
+    var url = document.location.toString();
+    if (url.match('#')) {
+        cash('[data-toggle="tab"][data-target="#'+url.split('#')[1]+'"]').trigger('click');
+    }
+}; verificaHash();
+$(window).on('hashchange', function(e){
+    verificaHash();
+});
+
+function removeEmojis(string) {
+    var regex = /(?:[\u2700-\u27bf]|(?:\ud83c[\udde6-\uddff]){2}|[\ud800-\udbff][\udc00-\udfff]|[\u0023-\u0039]\ufe0f?\u20e3|\u3299|\u3297|\u303d|\u3030|\u24c2|\ud83c[\udd70-\udd71]|\ud83c[\udd7e-\udd7f]|\ud83c\udd8e|\ud83c[\udd91-\udd9a]|\ud83c[\udde6-\uddff]|\ud83c[\ude01-\ude02]|\ud83c\ude1a|\ud83c\ude2f|\ud83c[\ude32-\ude3a]|\ud83c[\ude50-\ude51]|\u203c|\u2049|[\u25aa-\u25ab]|\u25b6|\u25c0|[\u25fb-\u25fe]|\u00a9|\u00ae|\u2122|\u2139|\ud83c\udc04|[\u2600-\u26FF]|\u2b05|\u2b06|\u2b07|\u2b1b|\u2b1c|\u2b50|\u2b55|\u231a|\u231b|\u2328|\u23cf|[\u23e9-\u23f3]|[\u23f8-\u23fa]|\ud83c\udccf|\u2934|\u2935|[\u2190-\u21ff])/g;
+    return string.replace(regex, '');
+}
+
+// Atualiza, se existir Lista de Arquivos:
+$('[apagarArquivosAPP]').on('click', function(e){
+    action = $('#lista_arquivos_app').attr('action');
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: action,
+        data: "apagar=true",
+        success: function( data ) {
+            retornoAjax(data);
+            $('#lista_arquivos_app').html(data.lista);
+        }
+    });
+})
+
+$(document).on('click', '[excluirPedido]', function(){
+    var action = $(this).attr('action');
+    var ID = $(this).attr('excluirPedido');
+    var reload = ($(this).attr('href') ? $(this).attr('href') : '');
+    swal({
+        title: "Tem certeza que deseja excluir este Pedido?",
+        text: "Esta ação pode não ser desfeita.",
+        type: "info",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: 'Excluir',
+        confirmButtonClass: 'swal2-confirm btn btn-danger m-btn m-btn--custom',
+        cancelButtonText: 'Cancelar',
+        closeOnConfirm: false,
+        showLoaderOnConfirm: true,
+    }, function(isConfirm){
+        if (isConfirm) {     
+            swal('Excluindo!', 'O pedido está sendo analisado para exclusão. Sua página será atualizada.', "success");
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: DIR+'!/solicitar',
+                data: 'acao=excluir&pedido='+ID+'&reload='+reload,
+                success: function( data ) {
+                    retornoAjax(data);
+                },
+                error: function( data ) {
+                    swal.close();
+                    ajaxErro(data);
+                }
+            });
+        }
+    });
+});
+
+$(document).on('click', '[excluirAtraso]', function(){
+    var ID = $ (this).attr('excluirAtraso');
+    swal({
+        title: "Tem certeza que deseja excluir este registro de atraso?",
+        text: "Esta ação pode não ser desfeita.",
+        type: "info",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: 'Excluir',
+        confirmButtonClass: 'swal2-confirm btn btn-danger m-btn m-btn--custom',
+        cancelButtonText: 'Cancelar',
+        closeOnConfirm: false,
+        showLoaderOnConfirm: true,
+    }, function(isConfirm){
+        if (isConfirm) {     
+            swal('Excluindo!', 'O registro está sendo analisado para exclusão. Sua página será atualizada.', "success");
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: DIR+'!/excluir',
+                data: 'acao=excluir&atraso='+ID,
+                success: function( data ) {
+                    retornoAjax(data);
+                },
+                error: function( data ) {
+                    swal.close();
+                    ajaxErro(data);
+                }
+            });
+        }
+    });
+});
+
+// swPedir
+$(document).on('click', '[swPedir]', function(e){
+    href = $(this).attr('swPedir');
+    locutor = $(this).attr('locutor');
+    if(locutor) {
+        locutor = '?locutor='+locutor;
+    } else {
+        locutor = '';
+    }
+    swal({
+        title: "O que deseja pedir?",
+        text: "<div class=\"text-center\"><a href=\""+href+"off/"+locutor+"\" class=\"button w-40 inline-block rounded-full mr-2 bg-theme-14 text-theme-10\" swPedirEscolha=\"off\">Off</a><a href=\""+href+"producao/"+locutor+"\" class=\"button w-40 inline-block rounded-full ml-2 bg-theme-17 text-theme-11\" swPedirEscolha=\"spot\">Produção</a></div>",
+        html: true,
+        allowOutsideClick: false,
+        showCancelButton: true,
+        cancelButtonText: 'Voltar',
+        showConfirmButton: false,
+    });
+})
+
+// ## Problema ## //
+    // Abrir
+    $(document).on('click', '[informar_problema]', function(e){
+
+        var pedido = $(this).attr('pedido');
+            $('#problema_pedido').val(pedido);
+        $('[refazerPedido]').attr('href', $('[refazerPedido]').attr('o_href')+pedido);
+
+        var produto = $(this).attr('produto');
+
+        if (produto == 2) {
+            $('[problema_produto2]').show();
+        } else {
+            $('[problema_produto2]').hide();
+        }
+
+        var action = $('#modal-problema').find('form').attr('action');
+
+        $('#modal-problema').modal('toggle');
+
+    })
+    // Selecionar Problema
+    $(document).on('click', '[problema_tipo]', function(e){
+        tipo = $(this).attr('problema_tipo');
+        $('#problema_tipo').val(tipo);
+        
+        $('[problema_tipo]').addClass('btn-simple');
+        $(this).removeClass('btn-simple');
+
+        $('[problema_parte2]').show('linear');
+    })
+    // Fechar, reseta CKeditor e Dropzone
+    $("#modal-problema").on("hidden.bs.modal", function () {
+        $('[problema_tipo]').addClass('btn-simple');
+        $('[problema_parte2]').hide();
+        $('#problema_pedido').val('');
+        $('#problema_tipo').val('');
+        ID = $('#modal-problema').find('[ckeditor]').attr('id');
+        Dropzone.forElement("#modal-problema .dropzone").removeAllFiles(true);
+    });
+
+    // Resolver
+    $(document).on('click', '[resolver_problema]', function(e){
+
+        var problema = $(this).attr('problema');
+
+        $.ajax({
+            type: "POST",
+            dataType: "json",
+            url: DIR+'!/denunciar',
+            data: 'acao=consulta&problema='+problema,
+            beforeSend: function() {
+                if (!$('#problema_resolver').val() != problema) {
+                    ID = $('#modal-problema-resolver').find('[ckeditor]').attr('id')
+                    Dropzone.forElement("#modal-problema-resolver .dropzone").removeAllFiles(true);
+                }
+            },
+            success: function( data ) {
+                if (data.success == true) {
+                    $('#resolver_problema').val(data.ID);
+                    $('#resolver_motivo').html(data.motivo);
+                    $('#modal-problema-resolver').modal('toggle');
+
+                    if (data.novo_locutor == 1) {
+                        $('[resolver_locutor]').show();
+                        $('[resolver_normal]').hide();
+                    } else {
+                        $('[resolver_locutor]').hide();
+                        $('[resolver_normal]').show();
+                    }
+                }
+                retornoAjax(data);
+            },
+            error: function( data ) {
+                ajaxErro(data);
+            }
+        });
+    })
+
+    $(document).on('click', '[opcoes_resolver_locutor]', function(e){
+        
+        opcao = $(this).attr('opcoes_resolver_locutor');
+        $('[opcoes_resolver_locutor]').addClass('btn-simple');
+        $(this).removeClass('btn-simple');
+
+        if (opcao == 'escolher') {
+
+        } else if (opcao == 'cancelar') {
+            confirmarSolucao();
+        }
+        
+        $('[problema_tipo]').addClass('btn-simple');
+        $(this).removeClass('btn-simple');
+
+        $('[problema_parte2]').show('linear');
+    })
+
+function swalLocutor() {
+    swal("O locutor não está gravando no momento!", "Seu problema foi relatado com sucesso.", "success");
+}
+
+
+
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
+
+
+
+var FormularioPgto = function() {
+    var ajaxPgto = function(){
+
+        $('.ajaxPgto').each(function(e){
+            var formulario = $(this);
+            $(this).validate({
+                rules: {
+                    cpf: {
+                        cpf: true,
+                    },
+                },
+                messages: {
+                },
+                submitHandler: function( form ){
+                    gerarToken();
+                }
+            });
+        });
+    };
+
+    return {
+        init: function () {
+            // Init Login Form Validation
+            ajaxPgto();
+        }
+    };
+}();
+jQuery(document).ready(function() { FormularioPgto.init(); });
+
+$(document).on('click', '[showBox]', function(e){
+    target = $(this).attr('target');
+    $(target).toggle('fadeIn');
+})
+
+$(function () {
+    $('.data-picker').each( function() {
+        $(this).bootstrapMaterialDatePicker({
+            format: 'YYYY-MM-DD',
+            weekStart: 1,
+            clearButton: false,
+            time: false,
+            lang: 'pt-br',
+            cancelText: 'Cancelar',
+            okText: 'Definir'
+        });
+    });
+});
+
+
+
+$(document).on('click', '[addFavorito]', function(e){
+    btn = $(this);
+    locutor = $(this).attr('addFavorito');
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+'!/favoritos',
+        data: 'acao=adicionar&locutor='+locutor,
+        beforeSend: function() {
+            loader(btn);
+        },
+        success: function( data ) {
+            retornoAjax(data);
+            unload(btn);
+            if(data.success) {
+                $(btn)
+                    .removeClass('text-gray-700 bg-gray-200 dark:bg-gray-600 dark:border-dark-5 dark:text-gray-800')
+                    .addClass('bg-theme-31 text-theme-6')
+                    .attr('title', 'Remover dos Favoritos')
+                    .removeAttr('addFavorito')
+                    .attr('delFavorito', locutor);
+            }
+        },
+        error: function( data ) {
+            unload(btn);
+            ajaxErro(data);
+        },
+        completed: function () {
+            unload(btn);
+        },
+    });
+})
+$(document).on('click', '[delFavorito]', function(e){
+    btn = $(this);
+    locutor = $(this).attr('delFavorito');
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+'!/favoritos',
+        data: 'acao=remover&locutor='+locutor,
+        beforeSend: function() {
+        },
+        success: function( data ) {
+            retornoAjax(data);
+            unload(btn);
+            if(data.success) {
+                $(btn)
+                    .addClass('text-gray-700 bg-gray-200 dark:bg-gray-600 dark:border-dark-5 dark:text-gray-800')
+                    .removeClass('bg-theme-31 text-theme-6')
+                    .attr('title', 'Adicionar aos Favoritos')
+                    .removeAttr('delFavorito')
+                    .attr('addFavorito', locutor);
+            }
+        },
+        error: function( data ) {
+            ajaxErro(data);
+        },
+        completed: function () {
+            unload(btn);
+        },
+    });
+})
+
+
+function updateTables() {
+    $('[table-data]').each( function() {
+        $tabela = $('#'+$(this).attr('id')).DataTable();
+        pagina = $tabela.page();
+        $tabela.page(pagina).draw('page');
+    })
+    setTimeout(function(){ updateTables(); }, 90000);
+}
+setTimeout(function(){ updateTables(); }, 90000);
+
+
+webNotification.requestPermission(function onRequest(granted) {
+    if (granted) {
+        console.log('Notificações aceitas.');
+    } else {
+        //console.log('Notificações recusadas.');
+    }
+});
+
+function notifyMe(mensagem) {
+    webNotification.showNotification(SITE, {
+        body: mensagem,
+        icon: ICONE,
+        onClick: function onNotificationClicked() {
+            window.open(URL_DIR);
+        },
+        autoClose: 6000 //auto close the notification after 4 seconds (you can manually close it via hide function)
+    }, function onShow(error, hide) {
+        if (error) {
+            console.log('Erro ao exibir notificação: ' + error.message);
+        } else {
+            setTimeout(function hideNotification() {
+                hide();
+            }, 7000);
+        }
+    });
+}
+
+$.fn.dataTable.ext.errMode = 'none';
+$('[table-data]').each(function() {
+    $(this).on('error.dt', function (e, settings, techNote, message) {
+        console.log(e, settings, techNote, message);
+        ajaxErro();
+    });
+})
+
+//
+$('#formPesquisa').on("submit", function(e, inndex, newValue, oldValue) {
+    e.preventDefault();
+    pesquisa = $('#valor_pesquisa').val()
+    action = $(this).attr('action');
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: action,
+        data: 'pesquisa='+pesquisa,
+        success: function( data ) {
+            if (data.success) {
+                window.location.href = data.href;
+            } else {
+                retornoAjax(data);
+            }
+        },
+        error: function( data ) {
+            console.log('Error: '+data.responseText);
+            alert( 'Houve um erro imprevisto. Atualize a página.');
+        }
+    });
+});
+
+
+$(document).on('click', '[concluirMensagem]', function(e){
+    e.preventDefault();
+    action = $(this).attr('action');
+    ID = $(this).attr('concluirMensagem');
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: action,
+        data: 'acao=concluir&ID='+ID,
+        beforeSend: function() {
+        },
+        success: function( data ) {
+            retornoAjax(data);
+        },
+        error: function( data ) {
+            ajaxErro(data);
+        },
+        completed: function () {
+        },
+    });
+})
+
+$(document).on('click', '[excluirMensagem]', function(e){
+    e.preventDefault();
+    action = $(this).attr('action');
+    ID = $(this).attr('excluirMensagem');
+    swal({
+        title: "Tem certeza que deseja realizar esta Ação?",
+        text: "A exclusão desta mensagem não pode ser desfeita.",
+        type: "info",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: 'Confirmar',
+        confirmButtonClass: 'swal2-confirm btn btn-danger m-btn m-btn--custom',
+        cancelButtonText: 'Cancelar',
+        closeOnConfirm: false,
+        showLoaderOnConfirm: true,
+    }, function(isConfirm){
+        if (isConfirm) {     
+            swal('Excluindo!', 'A mensagem está sendo excluída. Sua página será atualizada.', "success");
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: action,
+                data: 'acao=excluir&ID='+ID,
+                beforeSend: function() {
+                },
+                success: function( data ) {
+                    retornoAjax(data);
+                },
+                error: function( data ) {
+                    ajaxErro(data);
+                },
+                completed: function () {
+                },
+            });
+        }
+    });
+})
+
+
+$(document).on('click', '[alterarStatus]', function(e){
+    acao = $(this).attr('alterar-status');
+    pedido = $(this).attr('pedido');
+    status = $(this).attr('alterarStatus');
+
+    swal({
+        title: "Tem certeza que deseja realizar esta Ação?",
+        text: "A mudança de status modifica apenas a posição do pedido na linha de produção.",
+        type: "info",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: 'Confirmar',
+        confirmButtonClass: 'swal2-confirm btn btn-danger m-btn m-btn--custom',
+        cancelButtonText: 'Cancelar',
+        closeOnConfirm: false,
+        showLoaderOnConfirm: true,
+    }, function(isConfirm){
+        if (isConfirm) {     
+            swal('Processando!', 'O pedido está sendo atualizado. Sua página será atualizada.', "success");
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: DIR+'!/intervir',
+                data: 'acao=alterar-status&pedido='+pedido+'&status='+status,
+                success: function( data ) {
+                    retornoAjax(data);
+                },
+                error: function( data ) {
+                    swal.close();
+                    ajaxErro(data);
+                }
+            });
+        }
+    });
+})
+
+$(document).on('click', '[resetarProdutor]', function(e){
+    pedido = $(this).attr('pedido');
+    action = DIR+'!/intervir';
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: action,
+        data: 'acao=gerenciar&pedido='+pedido+'&reset-produtor=true',
+        beforeSend: function() {
+            $('#modal-gerenciar').waitMe({
+                effect : 'orbit',
+                text : 'Aguarde...',
+                bg: 'rgba(255,255,255,0.7)',
+                waitTime : -1,
+                onClose : function() {}
+            });
+        },
+        success: function( data ) {
+            $('#modal-gerenciar').waitMe('hide');
+            retornoAjax(data);
+        },
+        error: function( data ) {
+            $('#modal-gerenciar').waitMe('hide');
+            ajaxErro(data);
+        },
+        completed: function (data) {
+            $('#modal-gerenciar').waitMe('hide');
+        }
+    });
+})
+
+
+// Abrir Edição Problema
+$(document).on('click', '[solucao_admin]', function(e){
+    acao = $(this).attr('solucao_admin');
+    problema = $(this).attr('problema');
+    if (acao == 'editar-problema') {
+        $.ajax({
+            type: "POST",
+            dataType: "json",
+            url: DIR+'!/denunciar',
+            data: 'acao=get-problema&problema='+problema,
+            success: function( data ) {
+                $('#editar_problema_id').val(problema);
+                $('#editar_problema_excluir').attr('problema', problema);
+                $('#editar_problema_formulario').val(data.formulario);
+                $('#modal-editar-problema').find('.dropzone').attr('formulario', data.formulario);
+                $('#editar_problema_motivo').val(data.motivo);
+                texto = $.parseHTML(data.motivo);
+                texto = $(texto).text();
+                $('#editar_problema_motivo').parent().find('[contenteditable="true"]').prepend(texto);
+                ID = $('#modal-editar-problema').find('[ckeditor]').attr('id')
+                $('#modal-editar-problema').modal('show');
+            },
+            error: function( data ) {
+                ajaxErro();
+            },
+        });
+    }
+})
+
+function initEditor(el) {
+    /*
+    cash(el).each(function () {
+      var editor = _ckeditor_ckeditor5_editor_classic_src_classiceditor__WEBPACK_IMPORTED_MODULE_0__["default"];
+      var options = editorConfig;
+      var el = this;
+
+      if (cash(el).data('simple-toolbar')) {
+        options = simpleEditorConfig;
+      }     
+
+      editor.create(el, options).then(function (editor) {
+        if (cash(el).closest('.editor').data('editor') == 'document') {
+          cash(el).closest('.editor').find('.document-editor__toolbar').append(editor.ui.view.toolbar.element);
+          window.editor = editor;
+        }
+      })["catch"](function (error) {
+        console.error(error.stack);
+      });
+    });
+    */
+}
+
+// Selecionar Problema
+$(document).on('click', '[problema_tipo]', function(e){
+    tipo = $(this).attr('problema_tipo');
+    $('#problema_tipo').val(tipo);
+    
+    $('[problema_tipo]').addClass('btn-simple');
+    $(this).removeClass('btn-simple');
+
+    $('[problema_parte2]').show('linear');
+})
+// Fechar, reseta CKeditor e Dropzone
+$("#modal-problema").on("hidden.bs.modal", function () {
+    $('[problema_tipo]').addClass('btn-simple');
+    $('[problema_parte2]').hide();
+    $('#problema_pedido').val('');
+    $('#problema_tipo').val('');
+    ID = $('#modal-problema').find('[ckeditor]').attr('id');
+    Dropzone.forElement("#modal-problema .dropzone").removeAllFiles(true);
+});
+
+
+$(document).on('click', '[excluirProblemaCliente]', function(e){
+    acao = $(this).attr('excluir-problema');
+    problema = $(this).attr('problema');
+
+    swal({
+        title: "Tem certeza que deseja excluir este Problema?",
+        text: "Esta ação pode não ser desfeita.",
+        type: "info",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: 'Excluir',
+        confirmButtonClass: 'swal2-confirm btn btn-danger m-btn m-btn--custom',
+        cancelButtonText: 'Cancelar',
+        closeOnConfirm: false,
+        showLoaderOnConfirm: true,
+    }, function(isConfirm){
+        if (isConfirm) {     
+            swal('Excluindo!', 'O problema está sendo excluído. Sua página será atualizada.', "success");
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: DIR+'!/denunciar',
+                data: 'acao=excluir-problema&problema='+problema+'&modal=#modal-editar-problema&status=5',
+                success: function( data ) {
+                    retornoAjax(data);
+                },
+                error: function( data ) {
+                    swal.close();
+                    ajaxErro(data);
+                }
+            });
+        }
+    });
+
+})
+
+
+// Selecionar Problema
+$(document).on('click', '[pLocutores]', function(e){
+    pergunta = $(this).attr('pLocutores');
+    resposta = $(this).attr('resposta');
+    if (resposta == 'Sim') {
+        $('[textos-'+pergunta+']').show();
+    } else {
+        $('[textos-'+pergunta+']').hide();
+    }
+    $('#info_'+pergunta).val(resposta);
+    if (resposta == 'Sim') {
+        $('[name=tempo_'+pergunta+']').focus();
+    }
+    $('[pLocutores='+pergunta+']').addClass('btn-simple');
+    $(this).removeClass('btn-simple');
+    if(emptyPolitico && pergunta == 'politico') {
+        $('#formInfoLocutor').submit();
+    }
+})
+
+var FormularioLocutor = function() {
+    var ajaxLocutor = function(){
+        $('.ajaxLocutor').each(function(e){
+
+            var formulario = $(this);
+
+            $(this).validate({
+                submitHandler: function( form ){
+
+                    dados = new FormData($(form).get(0));
+                    /*
+                    if (!dados.get('institucionais')) {
+                        swal('Você grava textos Institucionais (Vídeos/TV) no Pacote?', 'Responda à pergunta acima para continuar!', "error");
+                        return false;
+                    } else if (!dados.get('religiosos')) {
+                        swal('Você grava textos religiosos no pacote?', 'Responda à pergunta acima para continuar!', "error");
+                        return false;
+                    } else if (!dados.get('espera')) {
+                        swal('Você grava espera telefônica no pacote?', 'Responda à pergunta acima para continuar!', "error");
+                        return false;
+                    } else {
+                        */
+                        $.ajax({
+                            type: "POST",
+                            dataType: "json",
+                            url: $(form).attr('action'),
+                            data: dados,
+                            cache: false,
+                            contentType: false,
+                            processData: false,
+                            beforeSend: function() {
+                                loader(form);
+                            },
+                            success: function( data ) {
+                                unload(form);
+                                retornoAjax(data);
+                            },
+                            error: function( data ) {
+                                unload(form);
+                                ajaxErro(data);
+                            },
+                            completed: function (data) {
+                                unload(form);
+                            }
+                        });
+                    //}
+                    //return false;
+                }
+            });
+        });
+    };
+
+    return {
+        init: function () {
+            // Init Login Form Validation
+            ajaxLocutor();
+        }
+    };
+}();
+jQuery(document).ready(function() { FormularioLocutor.init(); });
+
+
+
+$(document).on('click', '[excluirComentario]', function(){
+    var ID = $ (this).attr('excluirComentario');
+    swal({
+        title: "Tem certeza que deseja excluir este Comentário?",
+        text: "Vale lembrar que este comentário apenas você pode visualizar!",
+        type: "info",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: 'Excluir',
+        confirmButtonClass: 'swal2-confirm btn btn-danger m-btn m-btn--custom',
+        cancelButtonText: 'Cancelar',
+        closeOnConfirm: false,
+        showLoaderOnConfirm: true,
+    }, function(isConfirm){
+        if (isConfirm) {     
+            swal('Excluindo!', 'O comentário está excluído. Sua página será atualizada.', "success");
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: DIR+'!/comentarios',
+                data: 'acao=excluir&ID='+ID,
+                success: function( data ) {
+                    retornoAjax(data);
+                },
+                error: function( data ) {
+                    swal.close();
+                    ajaxErro(data);
+                }
+            });
+        }
+    });
+});
+
+$(document).on('click', '[excluirAvaliacao]', function(){
+    var ID = $ (this).attr('comentario');
+    var aval = $ (this).attr('excluirAvaliacao');
+    swal({
+        title: "Tem certeza que deseja excluir esta Avaliação/Comentário?",
+        text: "Esta ação não pode ser desfeita.",
+        type: "info",
+        showCancelButton: true,
+        showConfirmButton: true,
+        confirmButtonText: 'Excluir',
+        confirmButtonClass: 'swal2-confirm btn btn-danger m-btn m-btn--custom',
+        cancelButtonText: 'Cancelar',
+        closeOnConfirm: false,
+        showLoaderOnConfirm: true,
+    }, function(isConfirm){
+        if (isConfirm) {     
+            swal('Excluindo!', 'A avaliação está excluída. Sua página será atualizada.', "success");
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: DIR+'!/comentarios',
+                data: 'acao=excluir&ID='+ID+'&avaliacao='+aval,
+                success: function( data ) {
+                    retornoAjax(data);
+                },
+                error: function( data ) {
+                    swal.close();
+                    ajaxErro(data);
+                }
+            });
+        }
+    });
+});
+
+
+// CARREGAR COMPROVANTE
+$(document).on('click', '[carregar_comprovante]', function(){
+    fatura = $(this).attr('carregar_comprovante');
+    $('#carregar_comprovante_id').val(fatura);
+    
+    $('#modal-comprovante').modal('show');
+    
+    $('#modal-excluir').on('hidden.bs.modal', function () {
+       $('#carregar_comprovante_id').val('');
+    });
+});
+
+function carregarComprovante($this) {
+    fatura = $($this).attr('carregar_comprovante');
+    $('#carregar_comprovante_id').val('value', fatura);
+    
+    $('#modal-comprovante').modal('show');
+    
+    $('#modal-excluir').on('hidden.bs.modal', function () {
+       $('#carregar_comprovante_id').val('');
+    });
+}
+
+
+// Magnific Popup
+$(document).ready(function() {
+    if ($.fn.magnificPopup) {
+        $('.magnific.iframe').magnificPopup({type:'iframe'});
+        $('.magnific.imagem').magnificPopup({type:'image'});
+    }
+});
+
+function listarDemos(demos) {
+    /*$(demos).each(function(lista) {
+        console.log("Lista: ", lista);
+    });*/
+}
+
+var velocidades_estilos;
+velocidades_estilos = {
+    1: "Rápida",
+    2: "Normal",
+    3: "Lenta",
+    '1': "Rápida",
+    '2': "Normal",
+    '3': "Lenta"
+}
+
+function playDemo(target) {
+
+    _velocidades = {
+        1: "Rápida",
+        2: "Normal",
+        3: "Lenta",
+        '1': "Rápida",
+        '2': "Normal",
+        '3': "Lenta"
+    }
+
+    demo = $(target).attr('playDemo');
+    nome = $(target).attr('nome');
+    estilos = $(target).attr('estilos');
+    demos = $(target).data('demos');
+    lista_demos = listarDemos(demos);
+
+    $('[modal_demos="nome"]').html(nome);
+    $('[modal_demos="estilos"]').html(estilos);
+    $('[modal_demos="demo_principal"]').attr('src', demo);
+    d_demo = demo.split('/').pop();
+    $('[modal_demos="demo_principal_download"]').attr('href', PATH+HD+"/demos/"+d_demo).attr('download', nome+" - "+d_demo)
+
+
+    $('[modal_demos="lista_padroes"]').html('');
+    $('[modal_demos="lista_outros"]').html('');
+
+
+    if(demos?.padroes) {
+        $.each(demos.padroes, function(k, d) {
+            $('[modal_demos="lista_padroes"]').append('<span class="text-center capitalize text-lg mb-2 ml-3">'+d.estilo+' <small>('+_velocidades[d.velocidade]+')</small></span><div class="flex flex-row justify-align-center w-100 gap-3"><audio class="w-auto w-full" preload="none" controls class="col-sm-12" src="//hd.paineldegravacao.com.br/demos/'+d.demo+'"></audio><a href="'+PATH+HD+"/demos/"+d.demo+'" download="'+nome+" - "+d.demo+'" downloadDireto class="col-auto intro-x rounded-full button button--lg text-white bg-theme-1" target="_blank"><i class="fa fa-download"></i></a></div>');
+        })
+        $('[modal_demos="padroes"]').show();
+    } else {
+        $('[modal_demos="padroes"]').hide();
+    }
+    if(demos?.outros) {
+        $.each(demos.outros, function(k, d) {
+            $('[modal_demos="lista_outros"]').append('<span class="text-center capitalize text-lg mb-2 ml-3">'+d.estilo+' <small>('+_velocidades[d.velocidade]+')</small></span><div class="flex flex-row justify-align-center w-100 gap-3"><audio class="w-auto w-full" preload="none" controls class="col-sm-12" src="//hd.paineldegravacao.com.br/demos/'+d.demo+'"></audio><a href="'+PATH+HD+"/demos/"+d.demo+'" download="'+nome+" - "+d.demo+'" downloadDireto class="col-auto intro-x rounded-full button button--lg text-white bg-theme-1" target="_blank"><i class="fa fa-download"></i></a></div>');
+        })
+        $('[modal_demos="outros"]').show();
+    } else {
+        $('[modal_demos="outros"]').hide();
+    }
+
+    $('#modal-demo-completo').modal('show');
+
+    $('[modal_demos="demo_principal"]').trigger('play');
+}
+
+
+// Fix $(document).on('hidden.bs.modal',  '#modal-demo-completo', function (event) {
+const attrObserver = new MutationObserver((mutations) => {
+    mutations.forEach(mu => {
+        if (mu.type == "attributes" && mu.attributeName == "class") {
+            if(!$('#modal-demo-completo').hasClass('overflow-y-auto')) {
+                $('[modal_demos="demo_principal"]').attr('src', '');
+                $('[modal_demos="lista_padroes"]').html('');
+                $('[modal_demos="lista_outros"]').html('');
+            }
+        }
+    });
+});
+const ELS_test = document.querySelectorAll("#modal-demo-completo");
+ELS_test.forEach(el => attrObserver.observe(el, {attributes: true}));
+
+
+
+// Play Demo
+$(document).on('click', '[playDemo]', function(e){
+
+    if($(this).attr('onClick') == "playDemo(this)") { return true; }
+    return playDemo(this);
+    /*
+
+    demo = $(this).attr('playDemo');
+    nome = $(this).attr('nome');
+    estilos = $(this).attr('estilos');
+    demos = $(this).data('demos');
+
+    $('[modal_demos="nome"]').html(nome);
+    $('[modal_demos="estilos"]').html(estilos);
+    $('[modal_demos="demo_principal"]').attr('src', demo);
+
+    $('[modal_demos="lista_padroes"]').html('');
+    $('[modal_demos="lista_outros"]').html('');
+
+
+    if(demos?.padroes) {
+        $.each(demos.padroes, function(k, d) {
+            $('[modal_demos="lista_padroes"]').append('<span class="text-center capitalize text-lg mb-2 ml-3">'+d.estilo+' <small>('+velocidades_estilos[d.velocidade]+')</small></span><audio class="col" preload="none" controls class="col-sm-12" src="//hd.paineldegravacao.com.br/demos/'+d.demo+'"></audio><br>');
+        })
+        $('[modal_demos="padroes"]').show();
+    } else {
+        $('[modal_demos="padroes"]').hide();
+    }
+    if(demos?.outros) {
+        $.each(demos.outros, function(k, d) {
+            $('[modal_demos="lista_outros"]').append('<span class="text-center capitalize text-lg mb-2 ml-3">'+d.estilo+' <small>('+velocidades_estilos[d.velocidade]+')</small></span><audio class="col" preload="none" controls class="col-sm-12" src="//hd.paineldegravacao.com.br/demos/'+d.demo+'"></audio><br>');
+        })
+        $('[modal_demos="outros"]').show();
+    } else {
+        $('[modal_demos="outros"]').hide();
+    }
+    $('#modal-demo-completo').modal('show');
+
+    $('[modal_demos="demo_principal"]').trigger('play');
+    */
+});
+
+//
+function abrirModal(ID) {
+    $('#modal-'+ID).modal('toggle');
+    cCookieHs('modal-'+ID, 'true', 3);
+}
+function ocultarModal(ID) {
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+'!/mensagens',
+        data: 'acao=ocultar&ID='+ID,
+        success: function( data ) {
+            retornoAjax(data);
+        }
+    });
+    $('#modal-'+ID).modal('hide');
+}
+$(document).on('click', '[ocultarModal]', function(e){
+    ID = $(this).attr('ocultarModal');
+    alert('Este modal não será mais exibido (#'+ID+')');
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        url: DIR+'!/mensagens',
+        data: 'acao=ocultar&ID='+ID,
+        success: function( data ) {
+            retornoAjax(data);
+        }
+    });
+})
+
+
+// Obs Locutores
+// RECUSAR
+$(document).on('click', '[obsLocutor]', function(e){
+    e.preventDefault(e);
+    locutor = $(this).attr('obsLocutor');
+    nome = $(this).attr('nome');
+    obs = $(this).attr('data-simpletooltip-text');
+    if(obs != undefined) {
+        $('[modal-obs_locutor_obs]').html(""+obs);
+    } else {
+        $('[modal-obs_locutor_obs]').html("");
+    }
+    $('[obsLocutorNome]').html(nome);
+    $('[modal-obs_locutor]').val(locutor);
+
+    $('#modal-obs-locutor').modal('show');
+});
+
+$(document).on('click', '[obsLocutorAdmin]', function(e){
+    e.preventDefault(e);
+    locutor = $(this).attr('obsLocutorAdmin');
+    nome = $(this).attr('nome');
+    obs = $(this).attr('data-simpletooltip-text');
+    if(obs != undefined) {
+        $('[modal-obs_locutor_admin_obs]').html(""+obs);
+    } else {
+        $('[modal-obs_locutor_admin_obs]').html("");
+    }
+    $('[obsLocutorAdminNome]').html(nome);
+    $('[modal-obs_locutor_admin]').val(locutor);
+
+    $('#modal-obs-locutor-admin').modal('show');
+});
+
+
+
+// Tootlip
+
+
+function initTooltip() {
+   (function() {
+      "use strict";
+      /*
+         * jQuery accessible simple (non-modal) tooltip window, using ARIA
+         * @version v2.0.4
+         * Website: https://a11y.nicolas-hoffmann.net/simple-tooltip/
+         * License MIT: https://github.com/nico3333fr/jquery-accessible-simple-tooltip-aria/blob/master/LICENSE
+         */
+
+      function accessibleSimpleTooltipAria(options) {
+        var element = $(this);
+        options = options || element.data();
+        var text = options.simpletooltipText || "";
+        var prefix_class = typeof options.simpletooltipPrefixClass !== "undefined"
+          ? options.simpletooltipPrefixClass + "-"
+          : "";
+        var content_id = typeof options.simpletooltipContentId !== "undefined"
+          ? "#" + options.simpletooltipContentId
+          : "";
+
+        var index_lisible = Math.random().toString(32).slice(2, 12);
+
+        element.attr({
+          "aria-describedby": "label_simpletooltip_" + index_lisible
+        });
+
+        element.wrap(
+          '<span class="' + prefix_class + 'simpletooltip_container"></span>'
+        );
+
+        var html =
+          '<span class="js-simpletooltip ' +
+          prefix_class +
+          'simpletooltip" id="label_simpletooltip_' +
+          index_lisible +
+          '" role="tooltip" aria-hidden="true">';
+
+        if (text !== "") {
+          html += "" + text + "";
+        } else {
+          var $contentId = $(content_id);
+          if (content_id !== "" && $contentId.length) {
+            html += $contentId.html();
+          }
+        }
+        html += "</span>";
+
+        $(html).insertAfter(element);
+      }
+
+      // Bind as a jQuery plugin
+      $.fn.accessibleSimpleTooltipAria = accessibleSimpleTooltipAria;
+
+      $(document).ready(function() {
+        $(".js-simple-tooltip").each(function() {
+          // Call the function with this as the current tooltip
+          accessibleSimpleTooltipAria.apply(this);
+        });
+
+        // events ------------------
+        $("body")
+          .on("mouseenter focusin", ".js-simple-tooltip", function() {
+            var $this = $(this);
+            var $tooltip_to_show = $("#" + $this.attr("aria-describedby"));
+            $tooltip_to_show.attr("aria-hidden", "false");
+          })
+          .on("mouseleave focusout", ".js-simple-tooltip", function() {
+            var $this = $(this);
+            var $tooltip_to_show = $("#" + $this.attr("aria-describedby"));
+            $tooltip_to_show.attr("aria-hidden", "true");
+          })
+          .on("keydown", ".js-simple-tooltip", function(event) {
+            // close esc key
+
+            var $this = $(this);
+            var $tooltip_to_show = $("#" + $this.attr("aria-describedby"));
+
+            if (event.keyCode == 27) {
+              // esc
+              $tooltip_to_show.attr("aria-hidden", "true");
+            }
+          });
+      });
+    })();
+}

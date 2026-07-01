@@ -1,0 +1,242 @@
+function logout() {
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: API+"logout",
+        success: function( data ) {
+            dCookie('usuario');
+            dCookie('sessao');
+            dCookie('chave');
+            window.location.href = window.location.href;
+        },
+        error: function( data ) {
+            alert( 'Houve um erro imprevisto. Atualize a página.');
+        }
+    });
+}
+
+function loader(target) {
+    $(target).waitMe({
+        effect : 'win8_linear',
+        //text : 'Carregando...',
+        bg: false,
+        waitTime : -1,
+        onClose : function() {}
+    });
+}
+
+function unload(target) {
+    $(target).waitMe('hide');
+}
+
+function alerta($tipo, $titulo, $texto, $callBack) {
+    var options = {
+        position: 'top-center',
+        closeTimeout: 5000,
+        closeWith: ['click'],
+        animation: {
+            open: 'slide-in',
+            close: 'slide-out'
+        },
+        showProgress: true,
+        showButtons: false,
+        width: 350
+    };
+    options.title = $titulo;
+    options.description = $texto;
+    //options.width = 350;
+    options.image = { visible: true };
+    switch($tipo) {
+        case "error" :
+            $tipo = 'error';
+            break;
+        case "danger" :
+            $tipo = 'danger';
+            break;
+        case "info" :
+            $tipo = 'info';
+            break;
+        case "warning" :
+            $tipo = 'warning';
+            break;
+        case "success" :
+            $tipo = 'success';
+            break;
+        case "alert" :
+            $tipo = 'alert';
+            break;
+        default:
+            $tipo = 'info';
+            break;
+    }
+    options.type = $tipo;
+    GrowlNotification.notify(options);
+}
+
+function ajaxErro() {
+
+}
+
+$(document).on('click', '[btnModoEscuro]', function(){
+    if($(this).attr('dark') == 1) {
+        $(this).attr('dark', 0);
+        desativarDark();
+    } else {
+        $(this).attr('dark', 1);
+        ativarDark();
+    }
+})
+
+
+function desativarDark() {
+    dCookie('dark');
+    $('html').removeClass('dark').addClass('light');
+    $('[disableLight]').attr('disabled', 'disabled');
+    $('[disableDark]').removeAttr('disabled');    
+    GrowlNotification.closeAll();
+	$.ajax({
+        type: "POST",
+        dataType: "json",
+        url: API+"dark",
+        data: 'acao=desativar',
+        success: function( data ) {
+            retornoAjax(data);
+        },
+        error: function( data ) {
+        	ajaxErro();
+        }
+    });
+}
+
+function ativarDark() {
+    cCookie('dark', true, 30);
+    $('html').addClass('dark').removeClass('light');
+    $('[disableLight]').removeAttr('disabled');
+    $('[disableDark]').attr('disabled', 'disabled');
+    GrowlNotification.closeAll();
+	$.ajax({
+        type: "POST",
+        dataType: "json",
+        url: API+"dark",
+        data: 'acao=ativar',
+        success: function( data ) {
+            retornoAjax(data);
+        },
+        error: function( data ) {
+        	ajaxErro();
+        }
+    });
+}
+
+function cCookie(name,value,days) {
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime()+(days*24*60*60*1000));
+        var expires = "; expires="+date.toGMTString();
+    }
+    else var expires = "";
+    document.cookie = name+"="+value+expires+"; path=/";
+}
+// Deletar Cookie
+function dCookie(name) {
+    cCookie(name,"",-1);
+}
+
+/* Define Funções Padrões */
+(function ($) {
+    /* Modal */
+    $.fn.extend({
+        modal: function (acao) {
+            return cash(this).modal(acao);
+        }
+    });
+
+    /* Delay */
+    $.fn.delayKeyup = function(callback, ms){
+        $(this).keyup(function( event ){
+            var srcEl = event.currentTarget;
+            if( srcEl.delayTimer )
+                clearTimeout (srcEl.delayTimer );
+            srcEl.delayTimer = setTimeout(function(){ callback( $(srcEl) ); }, ms);
+        });
+        return $(this);
+    };
+    $.fn.delayChange = function(callback, ms){
+        $(this).change(function( event ){
+            var srcEl = event.currentTarget;
+            if( srcEl.delayTimer )
+                clearTimeout (srcEl.delayTimer );
+            srcEl.delayTimer = setTimeout(function(){ callback( $(srcEl) ); }, ms);
+        });
+        return $(this);
+    };
+    $(document).on('click', '[modal]', function() {
+        target = $(this).attr('modal');
+        $(target).modal('toggle');
+    })
+
+    $(document).on('click', '[data-target]', function() {
+        target = $(this).attr('data-target');
+        if (target.match('#')) {
+            if(history.pushState) {
+                history.pushState(null, null, target);
+            } else {
+                location.hash = target;
+            }
+        }
+    });
+})(jQuery);
+
+
+
+
+
+
+// Pix
+const txtCopiarPix = document.querySelector('#qrcc')
+const btnCopiarPix = document.querySelector('[btnCopiarQR]')
+const copy = (text) => {
+    if(text){
+        const textarea = document.createElement('textarea')
+        document.body.appendChild(textarea)
+        textarea.value = text
+        textarea.select()
+        document.execCommand('copy')
+        textarea.remove()
+        alerta("info", "Código copiado", "O QR Copia e Cola foi copiado para área de trabalho");
+    } else {
+        alerta("danger", "Oops!", "Não foi possível copiar");
+    }
+}
+if(btnCopiarPix) {
+    btnCopiarPix.addEventListener('click', (e) => {
+      copy(txtCopiarPix.value)
+    })
+}
+function abrirModalPix(qr64, qrcc) {
+    $('#qr64').attr('src', "data:image/png;base64,"+qr64);
+    $('#qrcc').attr('value', qrcc);
+    $('#modal-pix').modal('show');
+}
+
+$(document).on('click', '[abrirModalPix]', function() {
+    qr64 = $(this).attr('qr64');
+    qrcc = $(this).attr('qrcc');
+    abrirModalPix(qr64, qrcc);
+})
+
+
+$('.documento').each(function() {
+    $(this).inputmask({
+      mask: ['999.999.999-99', '99.999.999/9999-99'],
+      keepStatic: true,
+    });
+})
+
+
+$('.numeros').each(function() {
+    $(this).inputmask({
+      mask: ['99999999999', '99999999999999'],
+      keepStatic: true,
+    });
+})
