@@ -1052,7 +1052,12 @@
     function scrollToTopNow(event) {
       if (event && typeof event.preventDefault === 'function') event.preventDefault();
       if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // âncora: título "Encontre a voz" (primeiro <h1> do Hero)
+      var target = document.querySelector('section.hero h1');
+      if (!target) target = document.body;
+
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
 
