@@ -120,6 +120,21 @@
       position:fixed; top:0; left:0; right:0; z-index:50;
       background:transparent;
     }
+
+    /* faixa do menu (esq -> dir) */
+    header::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg, rgba(224,32,32,.35), rgba(30,79,216,.35));
+      opacity:.18;
+      pointer-events:none;
+    }
+
+    header > * {
+      position:relative;
+    }
+
     .header-inner {
       max-width:1280px; margin:0 auto;
       padding:0 1rem;
@@ -604,20 +619,9 @@
     .footer-socials { display:flex; align-items:center; gap:16px; }
     .footer-socials a {
       color:rgba(255,255,255,.3); text-decoration:none;
-      transition:color .2s, background .2s, border-color .2s, transform .2s;
-      display:inline-flex; align-items:center; justify-content:center;
-      width:44px; height:44px; border-radius:14px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.08);
+      transition:color .2s;
     }
-    .footer-socials a svg{ width:22px; height:22px; }
-    .footer-socials a:hover{
-      color:#fff;
-      background:rgba(255,255,255,.1);
-      border-color:rgba(255,255,255,.16);
-      transform:translateY(-1px);
-    }
-
+    .footer-socials a:hover{ color:#fff; }
 
     /* ─────────── PARCEIROS ─────────── */
     .partners-strip {
@@ -698,12 +702,14 @@
   <!-- ══════════ HEADER ══════════ -->
   <header>
     <div class="header-inner">
-      <img class="logo" src="./index_files/0d38c8748a5a57f343ed7eab11e57c33.webp" alt="LiberaOff">
+      <img class="logo" src="./index_files/0d38c8748a5a57f343ed7eab11e57c33.webp" alt="LiberaOff" onclick="scrollToAndPrevent(event, 'top')">
+
 
       <nav class="desktop">
-        <button onclick="scrollTo(&#39;locutores&#39;)">Locutores</button>
-        <button onclick="scrollTo(&#39;como-funciona&#39;)">Como Funciona</button>
-        <button onclick="scrollTo(&#39;orcamento&#39;)">Orçamento</button>
+        <button onclick="scrollToAndPrevent(event, 'locutores')">Locutores</button>
+        <button onclick="scrollToAndPrevent(event, 'como-funciona')">Como Funciona</button>
+        <button onclick="scrollToAndPrevent(event, 'orcamento')">Orçamento</button>
+
       </nav>
 
       <div class="header-actions">
@@ -723,9 +729,10 @@
     </div>
 
     <div class="mobile-menu" id="mobileMenu">
-      <button onclick="scrollTo(&#39;locutores&#39;);closeMenu()">Locutores</button>
-      <button onclick="scrollTo(&#39;como-funciona&#39;);closeMenu()">Como Funciona</button>
-      <button onclick="scrollTo(&#39;orcamento&#39;);closeMenu()">Orçamento</button>
+      <button onclick="scrollToAndPrevent(event, 'locutores');closeMenu()">Locutores</button>
+      <button onclick="scrollToAndPrevent(event, 'como-funciona');closeMenu()">Como Funciona</button>
+      <button onclick="scrollToAndPrevent(event, 'orcamento');closeMenu()">Orçamento</button>
+
       <a href="https://paineldegravacao.com.br/liberaoff/locutores" target="_blank" rel="noopener noreferrer" class="btn-solicitar" onclick="closeMenu()">Solicitar Locução</a>
     </div>
   </header>
@@ -1028,11 +1035,19 @@
 
   <!-- ══════════ SCRIPTS ══════════ -->
   <script>
-    /* ── Smooth scroll ── */
+    /* ── Smooth scroll (sem recarregar) ── */
     function scrollTo(id) {
       var el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    function scrollToAndPrevent(event, id) {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
+      if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+      scrollTo(id);
+    }
+
 
     /* ── Menu mobile ── */
     function toggleMenu() {
