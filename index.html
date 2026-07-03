@@ -703,7 +703,7 @@
   <!-- ══════════ HEADER ══════════ -->
   <header>
     <div class="header-inner">
-      <img class="logo" src="./index_files/0d38c8748a5a57f343ed7eab11e57c33.webp" alt="LiberaOff" onclick="scrollToAndPrevent(event, 'top')">
+      <img class="logo" src="./index_files/0d38c8748a5a57f343ed7eab11e57c33.webp" alt="LiberaOff" style="cursor:pointer;" onclick="scrollToTopNow(event)">
 
 
       <nav class="desktop">
@@ -1047,6 +1047,12 @@
       if (event && typeof event.preventDefault === 'function') event.preventDefault();
       if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
       scrollTo(id);
+    }
+
+    function scrollToTopNow(event) {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
+      if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
 
