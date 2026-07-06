@@ -91,7 +91,7 @@
      * @alias webNotification.allowRequest
      * @public
      */
-webNotification.allowRequest = false; // disabled: avoid auto prompting notification permission
+    webNotification.allowRequest = true; //true to enable automatic requesting of permissions if needed
 
     /*eslint-disable func-name-matching*/
     Object.defineProperty(webNotification, 'permissionGranted', {
