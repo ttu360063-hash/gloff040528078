@@ -734,6 +734,16 @@ document.addEventListener('keydown',function(e){
 
 // ── HEADER SCROLL EFFECT ──
 window.addEventListener('scroll',function(){
+  // Reaplica tipografia do Hero (evita “encolher” após scroll/efeitos)
+  var heroH=document.querySelector('.hero-left h1');
+  if(heroH){
+    heroH.style.fontSize='clamp(2rem,8vw,4.5rem)';
+    heroH.style.lineHeight='1.06';
+    heroH.style.letterSpacing='-0.02em';
+    heroH.style.fontWeight='900';
+    heroH.style.display='block';
+  }
+
   var h=document.getElementById('site-header');
   if(!h) return;
   if(window.scrollY>20){
